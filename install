@@ -105,7 +105,7 @@ end
 def git
   @git ||= if ENV['GIT'] and File.executable? ENV['GIT']
     ENV['GIT']
-  elsif Kernel.system '/usr/bin/which git >/dev/null'
+  elsif Kernel.system 'which git >/dev/null'
     'git'
   else
     exe = `xcrun -find git 2>/dev/null`.chomp
@@ -281,12 +281,19 @@ Dir.chdir HOMEBREW_PREFIX do
     # -m to stop tar erroring out if it can't modify the mtime for root owned directories
     # pipefail to cause the exit status from curl to propagate if it fails
     curl_flags = "fsSL"
-    system "/bin/bash -o pipefail -c '/usr/bin/curl -#{curl_flags} #{HOMEBREW_REPO}/tarball/master | tar xz -m --strip 1'"
+    curl = '/usr/bin/curl'
+    bash = '/bin/bash'
+    if ENV["BREWSTRAP_DIR"]
+      curl = "#{ENV["BREWSTRAP_DIR"]}/bin/curl"
+      bash = "#{ENV["BREWSTRAP_DIR"]}/bin/bash"
+    end
+    system "#{bash} -o pipefail -c '#{curl} -#{curl_flags} #{HOMEBREW_REPO}/tarball/master | tar xz -m --strip 1'"
   end
 end
 
 # no analytics during installation
 ENV["HOMEBREW_NO_ANALYTICS_THIS_RUN"] = "1"
+system "#{ENV["BREWSTRAP_DIR"]}/bin/brewstrap", "--fixpaths" if ENV["BREWSTRAP_DIR"]
 system "#{HOMEBREW_PREFIX}/bin/brew", "tap", "homebrew/core"
 
 warn "#{HOMEBREW_PREFIX}/bin is not in your PATH." unless ENV['PATH'].split(':').include? "#{HOMEBREW_PREFIX}/bin"
